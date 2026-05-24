@@ -1,1 +1,5 @@
-node_modules
+node_modules/electron/dist/electron.exe
+dist/Turret Doom Setup 0.0.0.exe
+dist/TurretDoom-portable.exe
+dist/win-unpacked/resources/app.asar
+dist/win-unpacked/Turret Doom.exe
