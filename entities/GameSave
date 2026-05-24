@@ -1,0 +1,58 @@
+{
+  "name": "GameSave",
+  "type": "object",
+  "properties": {
+    "level": {
+      "type": "number",
+      "default": 1
+    },
+    "resources": {
+      "type": "number",
+      "default": 0
+    },
+    "xp": {
+      "type": "number",
+      "default": 0
+    },
+    "playerLevel": {
+      "type": "number",
+      "default": 1
+    },
+    "wins": {
+      "type": "number",
+      "default": 0
+    },
+    "equippedCharacter": {
+      "type": "string",
+      "default":"dolphin"
+    },
+    "equippedOffensive": {
+      "type": "string",
+      "default": "classic"
+    },
+    "turretUpgrades": {
+      "type": "object",
+      "properties": {
+        "turret_health": {
+          "type": "number",
+          "default": 0
+        },
+        "turret_damage": {
+          "type": "number",
+          "default": 0
+        },
+        "turret_build": {
+          "type": "number",
+          "default": 0
+        }
+      }
+    },
+    "characterUpgrades": {
+      "type": "object",
+      "description": "Map of characterId -> upgrade object"
+    }
+  },
+  "required": [
+    "level"
+  ]
+}

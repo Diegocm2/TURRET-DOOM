@@ -1,0 +1,25 @@
+{
+  "appId": "com.diego.turretdoom",
+  "productName": "Turret Doom",
+  "files": [
+    "dist/**/*",
+    "electron.cjs",
+    "preload.cjs",
+    "node_modules/**/*"
+  ],
+  "win": {
+    "target": [
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] }
+    ],
+    "icon": "dist/app-icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true
+  },
+  "portable": {
+    "artifactName": "TurretDoom-portable.exe"
+  }
+}
