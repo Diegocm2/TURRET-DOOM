@@ -4,3 +4,4 @@
 
 # Keep custom assets tracked
 !public/assets/
+node_modules

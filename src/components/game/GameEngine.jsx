@@ -1,4 +1,4 @@
-import { TILE_SIZE, COLORS, TURRET_TYPES, TURRET_CATEGORY, POWERUP_TYPES, CHARACTERS, getGridSize, getAIDifficulty, getWeatherForLevel } from './GameConstants';
+import { TILE_SIZE, COLORS, TURRET_TYPES, TURRET_CATEGORY, POWERUP_TYPES, CHARACTERS, getGridSize, getAIDifficulty, getWeatherForLevel, getTurretUpgradeKeys } from './GameConstants';
 
 const ZONE_W = 180;   // resource zone width (left rectangle)
 const ZONE_GAP = 10;  // gap between zone and grid
@@ -50,6 +50,9 @@ export class GameEngine {
     this.ctx = canvas.getContext('2d');
     this.level = level;
     this.upgrades = upgrades || {};
+    this.turretUpgrades = this.upgrades.turretUpgrades || {};
+    const { turretUpgrades, ...characterUpgrades } = this.upgrades;
+    this.upgrades = { ...characterUpgrades };
     this.onGameEnd = onGameEnd;
     this.gridSize = getGridSize(level); // always odd
     this.aiDifficulty = getAIDifficulty(level);
@@ -92,6 +95,14 @@ export class GameEngine {
     this.turretMode = 'offensive';
     this.abilityCooldown = 0;
     this.sharkDashMode = false; // tiburón: esperando clic para embestir
+
+    // Sound effects (placeholder files in public/assets/sounds)
+    this.sounds = {
+      turretFire: this.loadSound('/assets/sounds/turret-fire.wav'),
+      turretBuild: this.loadSound('/assets/sounds/turret-build.wav'),
+      collector: this.loadSound('/assets/sounds/collector-sfx.wav'),
+      ability: this.loadSound('/assets/sounds/ability.wav'),
+    };
 
     // Weather
     this.weather = getWeatherForLevel(level);
@@ -141,6 +152,10 @@ export class GameEngine {
     window.addEventListener('keydown', this.handleKeyDown);
   }
 
+  getTurretUpgradeValue(type, key) {
+    return this.turretUpgrades?.[type]?.[key] || 0;
+  }
+
   getFighterXY(gx, gy) { return { x: this.cellCX(gx), y: this.cellCY(gy) }; }
   getTurretXY(gx, gy) { return { x: this.cellCX(gx), y: this.cellCY(gy) }; }
 
@@ -166,6 +181,39 @@ export class GameEngine {
     };
   }
 
+  // Audio helpers
+  loadSound(src) {
+    if (typeof Audio === 'undefined') return null;
+    try {
+      const sound = new Audio(src);
+      sound.preload = 'auto';
+      return sound;
+    } catch {
+      return null;
+    }
+  }
+
+  getSoundVolume() {
+    if (typeof window === 'undefined') return 0.7;
+    const value = Number(window.localStorage.getItem('turret-doom-volume') || 70);
+    return Math.max(0, Math.min(1, value / 100));
+  }
+
+  playSound(name) {
+    const sound = this.sounds?.[name];
+    if (!sound) return;
+    try {
+      const instance = sound.cloneNode(true);
+      instance.volume = this.getSoundVolume();
+      instance.play().catch(() => {});
+    } catch {
+      try {
+        sound.volume = this.getSoundVolume();
+        sound.play().catch(() => {});
+      } catch {}
+    }
+  }
+
   // ── SPECIAL ABILITY ──────────────────────────────────────────────────────
   useSpecialAbility() {
     const p = this.player;
@@ -177,6 +225,7 @@ export class GameEngine {
     const COOLDOWN = 1500; // 25 seconds at 60fps
 
     if (this.characterId === 'octopus') {
+      this.playSound('ability');
       p.ammo -= ability.cost;
       const baseAngle = Math.atan2(this.mouse.y - p.y, this.mouse.x - p.x);
       const spread = Math.PI / 2; // 90° total spread
@@ -199,7 +248,8 @@ export class GameEngine {
       this.abilityCooldown = COOLDOWN;
       this.addFloatingText(`💚 +${Math.round(healed)} vida`, p.x, p.y - 30, '#22C55E');
 
-    }else if (this.characterId == 'thorns'){
+    } else if (this.characterId == 'thorns') {
+      this.playSound('ability');
       // Activar efecto de espinas por 5 segundos
       this.playerEffects.shield = 300; 
       this.abilityCooldown = COOLDOWN;
@@ -424,17 +474,32 @@ export class GameEngine {
     }
 
     this.playerResources -= cost;
-    const buildTime = this.playerEffects.build > 0 ? 30 : Math.max(30, 120 - (this.upgrades.turret_build || 0) * 15);
+    const buildTime = this.playerEffects.build > 0
+      ? 30
+      : Math.max(
+          30,
+          120 - this.getTurretUpgradeValue(selectedType, 'turret_build') * 15
+        );
     const turret = this.createTurret(gx, gy, selectedType, true, buildTime);
     if (cfg.category === TURRET_CATEGORY.collector) turret.collectTimer = 0;
     this.playerTurrets.push(turret);
     this.addFloatingText(`-${cost} 🪙`, p.x, p.y - 20, COLORS.resource);
+    this.playSound('turretBuild');
   }
 
   createTurret(gx, gy, type, isPlayer, buildTime = 120) {
     const cfg = TURRET_TYPES[type];
-    const healthBonus = isPlayer ? (this.upgrades.turret_health || 0) * 10 : this.aiDifficulty.healthMultiplier * 15;
-    const damageBonus = isPlayer ? (this.upgrades.turret_damage || 0) * 2 : this.aiDifficulty.damageMultiplier * 3;
+    const upgradeKeys = getTurretUpgradeKeys(type);
+    const healthBonus = isPlayer && upgradeKeys.includes('turret_health')
+      ? this.getTurretUpgradeValue(type, 'turret_health') * 10
+      : isPlayer
+        ? 0
+        : this.aiDifficulty.healthMultiplier * 15;
+    const damageBonus = isPlayer && upgradeKeys.includes('turret_damage')
+      ? this.getTurretUpgradeValue(type, 'turret_damage') * 2
+      : isPlayer
+        ? 0
+        : this.aiDifficulty.damageMultiplier * 3;
     const pos = this.getTurretXY(gx, gy);
     return {
       gridX: gx, gridY: gy, x: pos.x, y: pos.y,
@@ -660,7 +725,7 @@ export class GameEngine {
 
       if (t.type === 'collector' && isPlayer) {
         t.collectTimer = (t.collectTimer || 0) + 1;
-        const collectInterval = Math.max(30, TURRET_TYPES.collector.collectRate - (this.upgrades.collector_rate || 0) * 20);
+        const collectInterval = Math.max(30, TURRET_TYPES.collector.collectRate - this.getTurretUpgradeValue(t.type, 'collector_rate') * 20);
         if (t.collectTimer >= collectInterval) {
           t.collectTimer = 0;
           if (this.gridResources.some(r => r.gridX === t.gridX && r.gridY === t.gridY)) {
@@ -668,6 +733,7 @@ export class GameEngine {
             this.playerResources += amount;
             this.collectedResources += amount;
             this.addFloatingText(`+${amount} ⛏️`, t.x, t.y - TILE_SIZE * 0.6, COLORS.turretCollector);
+            this.playSound('collector');
           }
         }
         continue;
@@ -699,6 +765,7 @@ export class GameEngine {
         case 'fire':    this.fireZones.push({ x: target.x, y: target.y, radius: TILE_SIZE * 1.5, damage: t.damage, isPlayer, life: 120, maxLife: 120 }); break;
         case 'laser':   this.bullets.push({ x: t.x, y: t.y, tx: target.x, ty: target.y, damage: t.damage, isPlayer, type: 'laser', life: 20, sourceX: t.x, sourceY: t.y }); break;
       }
+      if (t.isPlayer) this.playSound('turretFire');
     }
   }
 
@@ -808,6 +875,14 @@ export class GameEngine {
           const thorns = (tgt.isPlayer && this.characterId === 'thorns') || (!tgt.isPlayer && this.aiCharacterId === 'thorns');
           if (thorns) dmg *= 0.5;
           tgt.health -= dmg;
+          if (thorns) {
+            const reflect = dmg * 0.25;
+            const attacker = fz.isPlayer ? this.player : this.enemy;
+            attacker.health -= reflect;
+            this.spawnParticles(attacker.x, attacker.y, '#b3b14f', 4);
+            this.addFloatingText(`🐡 -${Math.round(reflect)}`, attacker.x, attacker.y - 20, '#b3b14f');
+            if (attacker.health <= 0) this.handleDeath(attacker);
+          }
           if (tgt.health <= 0) this.handleDeath(tgt);
         }
       }

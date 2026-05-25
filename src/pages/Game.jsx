@@ -5,7 +5,8 @@ import GameCanvas from '../components/game/GameCanvas';
 import GameOverScreen from '../components/game/GameOverScreen';
 import LevelSelect from '../components/game/LevelSelect';
 import {
-  UPGRADE_COSTS, getXpReward, getPlayerRankFromXp,
+  UPGRADE_COSTS, getXpReward, getPlayerRankFromXp, CHARACTERS,
+  buildDefaultTurretUpgrades,
 } from '../components/game/GameConstants';
 
 const SCREENS = {
@@ -15,9 +16,17 @@ const SCREENS = {
   GAME_OVER: 'game_over',
 };
 
-const DEFAULT_CHAR_UPGRADES = { health: 0, magazine: 0, charge_speed: 0, reload_speed: 0, shooting: 0, fatigue: 0 };
-const DEFAULT_TURRET_UPGRADES = { fabrication: 0, turret_health: 0, turret_damage: 0, turret_build: 0 };
+const DEFAULT_CHAR_UPGRADES = { fabrication: 0, health: 0, magazine: 0, charge_speed: 0, reload_speed: 0, shooting: 0, fatigue: 0 };
+const DEFAULT_TURRET_UPGRADES = buildDefaultTurretUpgrades();
 const LOCAL_SAVE_KEY = 'turret-doom-save-v1';
+
+const DEFAULT_CHARACTER_IDS = Object.keys(CHARACTERS);
+function buildDefaultCharacterUpgrades() {
+  return DEFAULT_CHARACTER_IDS.reduce((acc, id) => ({
+    ...acc,
+    [id]: { ...DEFAULT_CHAR_UPGRADES },
+  }), {});
+}
 
 function buildDefaultSave() {
   return {
@@ -26,18 +35,19 @@ function buildDefaultSave() {
     xp: 0,
     wins: 0,
     turretUpgrades: { ...DEFAULT_TURRET_UPGRADES },
-    characterUpgrades: { soldier: { ...DEFAULT_CHAR_UPGRADES } },
+    characterUpgrades: buildDefaultCharacterUpgrades(),
     equippedOffensive: 'classic',
-    equippedCharacter: 'soldier',
+    equippedCharacter: 'dolphin',
   };
 }
 
 export default function Game() {
   const [screen, setScreen] = useState(SCREENS.MENU);
+  const [menuInitialTab, setMenuInitialTab] = useState('menu');
   const [gameResult, setGameResult] = useState(null);
   const [localSave, setLocalSave] = useState(null);
   const [equippedOffensive, setEquippedOffensive] = useState('classic');
-  const [equippedCharacter, setEquippedCharacter] = useState('soldier');
+  const [equippedCharacter, setEquippedCharacter] = useState('dolphin');
   const [selectedLevel, setSelectedLevel] = useState(1);
   const queryClient = useQueryClient();
 
@@ -69,9 +79,22 @@ export default function Game() {
         equippedCharacter: s.equippedCharacter || equippedCharacter,
       }));
     } else if (!localSave && storedSave) {
-      setLocalSave(storedSave);
-      if (storedSave.equippedOffensive) setEquippedOffensive(storedSave.equippedOffensive);
-      if (storedSave.equippedCharacter) setEquippedCharacter(storedSave.equippedCharacter);
+      const upgradedSave = {
+        ...buildDefaultSave(),
+        ...storedSave,
+        turretUpgrades: {
+          ...buildDefaultTurretUpgrades(),
+          ...(storedSave.turretUpgrades || {}),
+        },
+        characterUpgrades: {
+          ...buildDefaultCharacterUpgrades(),
+          ...(storedSave.characterUpgrades || {}),
+        },
+        equippedCharacter: CHARACTERS[storedSave.equippedCharacter]?.id ? storedSave.equippedCharacter : 'dolphin',
+      };
+      setLocalSave(upgradedSave);
+      if (upgradedSave.equippedOffensive) setEquippedOffensive(upgradedSave.equippedOffensive);
+      if (upgradedSave.equippedCharacter) setEquippedCharacter(upgradedSave.equippedCharacter);
     } else if (saves.length === 0 && !localSave) {
       const newSave = buildDefaultSave();
       setLocalSave(newSave);
@@ -119,17 +142,15 @@ export default function Game() {
   }, [save, persistSave, selectedLevel]);
 
   // onUpgrade(key, category) where category = 'character' | 'turret'
-  const handleUpgrade = useCallback((key, category) => {
-    const upgrades = category === 'character'
-      ? (save.characterUpgrades?.[equippedCharacter] || {})
-      : (save.turretUpgrades || {});
-    const currentLevel = upgrades[key] || 0;
-    const maxLevel = UPGRADE_COSTS[key].length - 1;
-    if (currentLevel >= maxLevel) return;
-    const cost = UPGRADE_COSTS[key][currentLevel + 1];
-    if ((save.resources || 0) < cost) return;
-
+  const handleUpgrade = useCallback((key, category, turretType) => {
     if (category === 'character') {
+      const upgrades = save.characterUpgrades?.[equippedCharacter] || {};
+      const currentLevel = upgrades[key] || 0;
+      const maxLevel = UPGRADE_COSTS[key].length - 1;
+      if (currentLevel >= maxLevel) return;
+      const cost = UPGRADE_COSTS[key][currentLevel + 1];
+      if ((save.resources || 0) < cost) return;
+
       const newCharUpgrades = {
         ...save.characterUpgrades,
         [equippedCharacter]: {
@@ -138,18 +159,36 @@ export default function Game() {
         },
       };
       persistSave({ resources: save.resources - cost, characterUpgrades: newCharUpgrades });
-    } else {
-      persistSave({
-        resources: save.resources - cost,
-        turretUpgrades: { ...save.turretUpgrades, [key]: currentLevel + 1 },
-      });
+      return;
     }
-  }, [save, equippedCharacter, persistSave]);
+
+    const type = turretType || equippedOffensive;
+    const upgrades = (save.turretUpgrades?.[type] || {});
+    const currentLevel = upgrades[key] || 0;
+    const maxLevel = UPGRADE_COSTS[key].length - 1;
+    if (currentLevel >= maxLevel) return;
+    const cost = UPGRADE_COSTS[key][currentLevel + 1];
+    if ((save.resources || 0) < cost) return;
+
+    persistSave({
+      resources: save.resources - cost,
+      turretUpgrades: {
+        ...save.turretUpgrades,
+        [type]: {
+          ...save.turretUpgrades?.[type],
+          [key]: currentLevel + 1,
+        },
+      },
+    });
+  }, [save, equippedCharacter, equippedOffensive, persistSave]);
 
   // Build combined upgrades object for the game engine
   const getActiveUpgrades = useCallback(() => {
     const charUpgs = save.characterUpgrades?.[equippedCharacter] || {};
-    return { ...charUpgs, ...(save.turretUpgrades || {}) };
+    return {
+      ...charUpgs,
+      turretUpgrades: save.turretUpgrades || buildDefaultTurretUpgrades(),
+    };
   }, [save, equippedCharacter]);
 
   const handlePlay = () => {
@@ -166,7 +205,7 @@ export default function Game() {
           xp={save.xp || 0}
           wins={save.wins || 0}
           turretUpgrades={save.turretUpgrades || DEFAULT_TURRET_UPGRADES}
-          characterUpgrades={save.characterUpgrades || { soldier: { ...DEFAULT_CHAR_UPGRADES } }}
+          characterUpgrades={save.characterUpgrades || buildDefaultCharacterUpgrades()}
           equippedOffensive={equippedOffensive}
           onChangeOffensive={setEquippedOffensive}
           equippedCharacter={equippedCharacter}
@@ -175,6 +214,7 @@ export default function Game() {
           onPlay={handlePlay}
           onClose={() => window.electronAPI?.quit?.() || window.close()}
           onCredits={() => {}}
+          initialTab={menuInitialTab}
         />
       )}
 
@@ -204,8 +244,14 @@ export default function Game() {
             setScreen(SCREENS.PLAYING);
           }}
           onReplay={() => setScreen(SCREENS.PLAYING)}
-          onUpgrades={() => setScreen(SCREENS.MENU)}
-          onMenu={() => setScreen(SCREENS.MENU)}
+          onUpgrades={() => {
+            setMenuInitialTab('upgrades');
+            setScreen(SCREENS.MENU);
+          }}
+          onMenu={() => {
+            setMenuInitialTab('menu');
+            setScreen(SCREENS.MENU);
+          }}
         />
       )}
     </div>

@@ -115,7 +115,7 @@ export const UPGRADE_ICONS = {
 
 // ── UPGRADE CATEGORIES ────────────────────────────────────────────────────────
 export const CHARACTER_UPGRADES = ['fabrication', 'health', 'magazine', 'charge_speed', 'reload_speed', 'shooting', 'fatigue'];
-export const TURRET_UPGRADES = ['turret_health', 'turret_damage', 'turret_build'];
+export const TURRET_UPGRADES = ['turret_health', 'turret_damage', 'turret_build', 'collector_rate'];
 export const TURRET_UPGRADE_KEYS_BY_TYPE = {
   classic:  ['turret_damage', 'turret_health', 'turret_build'],
   jelly:   ['turret_damage', 'turret_health', 'turret_build'],
@@ -127,6 +127,16 @@ export const TURRET_UPGRADE_KEYS_BY_TYPE = {
 
 export function getTurretUpgradeKeys(type) {
   return TURRET_UPGRADE_KEYS_BY_TYPE[type] || ['turret_health', 'turret_build'];
+}
+
+export function buildDefaultTurretUpgrades() {
+  return Object.keys(TURRET_TYPES).reduce((acc, type) => {
+    acc[type] = getTurretUpgradeKeys(type).reduce((obj, key) => {
+      obj[key] = 0;
+      return obj;
+    }, {});
+    return acc;
+  }, {});
 }
 
 export const UPGRADE_COSTS = {

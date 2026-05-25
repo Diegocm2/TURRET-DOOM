@@ -66,7 +66,7 @@ export default function GameCanvas({ level, upgrades, equippedOffensive, equippe
       clearInterval(hudInterval);
       engine.stop();
     };
-  }, [level, upgrades]);
+  }, [level, upgrades, equippedOffensive, equippedCharacter]);
 
   const handleSelectTurret = useCallback((type, mode) => {
     if (!engineRef.current) return;

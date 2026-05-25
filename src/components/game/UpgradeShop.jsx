@@ -28,6 +28,7 @@ function UpgradeCard({ upgradeKey, currentLevel, resources, onUpgrade }) {
                 />
               ))}
             </div>
+            <div className="text-[10px] text-slate-400 mt-1">Nivel {currentLevel}/{maxLevel}</div>
           </div>
         </div>
         {isMaxed ? (
@@ -53,7 +54,7 @@ function UpgradeCard({ upgradeKey, currentLevel, resources, onUpgrade }) {
 
 export default function UpgradeShop({ upgrades, resources, onUpgrade, onBack }) {
   const playerUpgrades = ['fabrication', 'fatigue', 'shooting', 'reload_speed', 'health', 'magazine', 'charge_speed'];
-  const turretUpgrades = ['turret_health', 'turret_damage', 'turret_build'];
+  const turretUpgrades = ['turret_health', 'turret_damage', 'turret_build', 'collector_rate'];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-6">
