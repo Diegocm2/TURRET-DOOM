@@ -61,8 +61,8 @@ export const TURRET_TYPES = {
   },
   laser: {
     name: 'Faro', category: TURRET_CATEGORY.offensive, color: '#06B6D4',
-    damage: 1.5, range: 6, fireRate: 5, cost: 35, health: 35,
-    description: 'Dispara un haz bioluminiscente de largo alcance', icon: <img width="48" height="48" src="https://img.icons8.com/color/48/lighthouse--v1.png" alt="lighthouse--v1"/>,
+    damage: 0.05, range: 7, fireRate: 12, cost: 35, health: 35,
+    description: 'Dispara un haz de largo alcance con daño leve y sostenido', icon: <img width="48" height="48" src="https://img.icons8.com/color/48/lighthouse--v1.png" alt="lighthouse--v1"/>,
   },
   shield: {
     name: 'Concha', category: TURRET_CATEGORY.defensive, color: '#10B981',

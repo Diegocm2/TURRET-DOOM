@@ -1,5 +1,5 @@
 import React from 'react';
-import { TURRET_TYPES, TURRET_CATEGORY, CHARACTERS } from './GameConstants';
+import { TURRET_TYPES, CHARACTERS } from './GameConstants';
 
 const FIXED_SUPPORT = [
   ['shield', TURRET_TYPES.shield],
@@ -18,22 +18,22 @@ export default function TurretDeck({ state, onSelectTurret, equippedOffensive, e
   const sharkDashMode = state.sharkDashMode || false;
 
   return (
-    <div className="flex items-center gap-4 bg-slate-900/95 backdrop-blur-sm border border-slate-700/50 rounded-xl px-6 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-950/95 backdrop-blur-xl border border-slate-700/30 rounded-3xl px-5 py-3 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.8)]">
       {/* Equipped offensive slot */}
-      <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-bold text-red-400 uppercase tracking-wider text-center">Ofensiva [1]</span>
+      <div className="flex flex-col gap-2">
+        <span className="text-[10px] font-semibold text-red-300 uppercase tracking-[0.22em] text-center">Ofensiva [1]</span>
         <div className="flex gap-2">
           <button
             onClick={() => onSelectTurret(equippedOffensive, 'offensive')}
             title={`${offCfg.name} — ${offCfg.description}`}
-            className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl border-2 transition-all ${
+            className={`flex flex-col items-center justify-center w-16 h-16 rounded-3xl border-2 transition-all ${
               isOffensive
-                ? 'border-red-400 bg-red-500/20 shadow-lg shadow-red-500/20 scale-110'
-                : 'border-red-400/50 bg-red-500/10'
+                ? 'border-red-400 bg-red-500/15 shadow-[0_12px_30px_-12px_rgba(248,113,113,0.8)] scale-105'
+                : 'border-red-400/30 bg-red-500/10 hover:border-red-300'
             }`}
           >
             <span className="text-2xl leading-none">{offCfg.icon}</span>
-            <span className="text-xs text-yellow-400 leading-none mt-1">{offCfg.cost}🪙</span>
+            <span className="text-[10px] text-amber-300 leading-none mt-1">{offCfg.cost}🪙</span>
           </button>
         </div>
       </div>
@@ -82,29 +82,29 @@ export default function TurretDeck({ state, onSelectTurret, equippedOffensive, e
       {/* Special ability button (only if character has one) */}
       {ability && (
         <>
-          <div className="w-px h-16 bg-slate-700/60" />
+          <div className="w-px h-16 bg-slate-700/40" />
           <div className="flex flex-col items-center gap-1.5">
-            <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Habilidad [Q]</span>
+            <span className="text-[10px] font-semibold text-violet-300 uppercase tracking-[0.22em]">Habilidad [Q]</span>
             <button
               onClick={onUseAbility}
               disabled={!abilityReady}
               title={`${ability.name} — ${ability.cost} bala`}
-              className={`relative flex flex-col items-center justify-center w-18 h-16 px-3 rounded-xl border-2 transition-all overflow-hidden ${
+              className={`relative flex flex-col items-center justify-center w-18 h-16 px-3 rounded-3xl border-2 transition-all overflow-hidden ${
                 sharkDashMode
-                  ? 'border-cyan-400 bg-cyan-500/30 shadow-lg shadow-cyan-500/40 animate-pulse cursor-pointer'
+                  ? 'border-cyan-400 bg-cyan-500/20 shadow-[0_15px_35px_-20px_rgba(34,211,238,0.7)] animate-pulse cursor-pointer'
                   : abilityReady
-                    ? 'border-purple-400 bg-purple-500/20 hover:bg-purple-500/30 shadow-lg shadow-purple-500/20 cursor-pointer'
-                    : 'border-slate-600 bg-slate-800/60 cursor-not-allowed opacity-60'
+                    ? 'border-violet-400 bg-violet-500/15 hover:bg-violet-500/25 shadow-[0_12px_30px_-16px_rgba(139,92,246,0.6)] cursor-pointer'
+                    : 'border-slate-700 bg-slate-900/70 cursor-not-allowed opacity-70'
               }`}
             >
               {cooldownPct > 0 && (
                 <div
-                  className="absolute bottom-0 left-0 right-0 bg-slate-700/70 transition-all"
+                  className="absolute bottom-0 left-0 right-0 bg-slate-800/80 transition-all"
                   style={{ height: `${cooldownPct * 100}%` }}
                 />
               )}
               <span className="text-2xl leading-none relative z-10">{ability.icon}</span>
-              <span className="text-xs text-purple-300 leading-none mt-0.5 relative z-10">{ability.name}</span>
+              <span className="text-[10px] text-violet-200 leading-none mt-0.5 relative z-10">{ability.name}</span>
             </button>
           </div>
         </>

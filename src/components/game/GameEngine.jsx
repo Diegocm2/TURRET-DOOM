@@ -763,7 +763,7 @@ export class GameEngine {
         case 'classic': this.bullets.push({ x: t.x, y: t.y, vx: Math.cos(angle)*5, vy: Math.sin(angle)*5, damage: t.damage, isPlayer, type: 'normal', life: 150 }); break;
         case 'jelly':  this.bullets.push({ x: t.x, y: t.y, vx: Math.cos(angle)*4, vy: Math.sin(angle)*4, damage: t.damage, isPlayer, type: 'jelly', life: 200, jellys: 3 }); break;
         case 'fire':    this.fireZones.push({ x: target.x, y: target.y, radius: TILE_SIZE * 1.5, damage: t.damage, isPlayer, life: 120, maxLife: 120 }); break;
-        case 'laser':   this.bullets.push({ x: t.x, y: t.y, tx: target.x, ty: target.y, damage: t.damage, isPlayer, type: 'laser', life: 20, sourceX: t.x, sourceY: t.y }); break;
+        case 'laser':   this.bullets.push({ x: t.x, y: t.y, tx: target.x, ty: target.y, damage: t.damage, isPlayer, type: 'laser', life: 10, sourceX: t.x, sourceY: t.y }); break;
       }
       if (t.isPlayer) this.playSound('turretFire');
     }
